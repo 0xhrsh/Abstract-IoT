@@ -64,7 +64,7 @@ def sendDataUpdates(sensor_list, ptime):
 if __name__ == '__main__':
     send_data_regularly, ptime, sensor_list = getConfig()
     setupPi(sensor_list)
-
+    # connect to server (send PI_ID)
     if send_data_regularly:
         sendDataRegularly(sensor_list, ptime)
     else:
