@@ -83,10 +83,7 @@ class HTTPServer():
         return response_line.encode()  # convert from str to bytes
 
     def response_headers(self, extra_headers=None):
-        """Returns headers (as bytes).
-        The `extra_headers` can be a dict for sending 
-        extra headers with the current response
-        """
+
         headers_copy = self.headers.copy()  # make a local copy of headers
 
         if extra_headers:
@@ -121,7 +118,7 @@ class HTTPServer():
             # so just serve index.html
             path = 'index.html'
 
-        if os.path.exists(path) and not os.path.isdir(path):  # don't serve directories
+        if os.path.exists(path) and not os.path.isdir(path):
             response_line = self.response_line(200)
 
             # find out a file's MIME type
