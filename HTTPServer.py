@@ -42,6 +42,7 @@ class HTTPServer():
             while True:
                 conn, addr = s.accept()
                 print("Connected by", addr)
+                
                 t = threading.Thread(
                     target=self.handle_single_connection, args=(conn,), daemon=True)
                 t.start()
@@ -57,20 +58,20 @@ class HTTPServer():
         while True:
             try:
                 data = conn.recv(1024)
+                request = HTTPRequest(data)
             except socket.error:
                 conn.close()
                 break
-            if data == b"" or data == b"quit\n":
-                conn.close()
-                break
 
-            response = self.handle_request(data)
+            response = self.handle_request(request)
             conn.sendall(response)
 
-    def handle_request(self, data):
+            if request.method == "GET":
+                conn.close()
+                
+            
 
-        request = HTTPRequest(data)  # Get a parsed HTTP request
-
+    def handle_request(self, request):
         try:
 
             handler = getattr(self, 'handle_%s' % request.method)

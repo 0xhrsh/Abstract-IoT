@@ -1,1 +1,1 @@
-ECHO hello world
+hello world!
