@@ -3,7 +3,12 @@ from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
 import os
+import requests
 
+# to download file over a request (e.g. init.sh)
+import urllib.request
+# import shutil
+blank_line = b'\r\n'
 
 class HTTPServer():
 
@@ -116,36 +121,57 @@ class HTTPServer():
         if not path:
             # If path is empty, that means user is at the homepage
             # so just serve index.html
-            path = 'index.html'
+            return self.serve_index()
+            
+        elif path.split('/')[0] == "init":  
+            return self.serve_init(request)
 
-        if os.path.exists(path) and not os.path.isdir(path):
-            response_line = self.response_line(200)
-
-            # find out a file's MIME type
-            # if nothing is found, just send `text/html`
-            content_type = mimetypes.guess_type(path)[0] or 'text/html'
-
-            extra_headers = {'Content-Type': content_type}
-            response_headers = self.response_headers(extra_headers)
-
-            with open(path, 'rb') as f:
-                response_body = f.read()
         else:
             response_line = self.response_line(404)
             response_headers = self.response_headers()
             response_body = b'<h1>404 Not Found</h1>'
 
-        blank_line = b'\r\n'
 
-        response = b''.join(
-            [response_line, response_headers, blank_line, response_body])
+            response = b''.join([response_line, response_headers, blank_line, response_body])
+
+            return response
+    
+    
+    def serve_index(self):
+        path = 'index.html'
+        response_line = self.response_line(200)
+        content_type = mimetypes.guess_type(path)[0] or 'text/html'
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
+        with open(path, 'rb') as f:
+                response_body = f.read()
+        
+        response = b''.join([response_line, response_headers, blank_line, response_body])
+
+        return response
+
+    def serve_init(self, request):
+        with open('./init_s.sh', 'wb') as f:
+            f.write(request.content)
+        response_line = self.response_line(200)
+
+        print("done!")
+        path = 'index.html'
+        content_type = mimetypes.guess_type(path)[0] or 'text/html'
+
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
+
+        with open(path, 'rb') as f:
+            response_body = f.read()
+
+        response = b''.join([response_line, response_headers, blank_line, response_body])
 
         return response
 
     def HTTP_501_handler(self, request):
 
         response_line = self.response_line(status_code=501)
-
         response_headers = self.response_headers()
 
         blank_line = b'\r\n'
