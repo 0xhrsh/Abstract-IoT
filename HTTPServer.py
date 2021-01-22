@@ -2,13 +2,14 @@ import socket
 from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
-import os
-import requests
+# import os
+# import requests
 
 # to download file over a request (e.g. init.sh)
-import urllib.request
+# import urllib.request
 # import shutil
 blank_line = b'\r\n'
+
 
 class HTTPServer():
 
@@ -42,7 +43,7 @@ class HTTPServer():
             while True:
                 conn, addr = s.accept()
                 print("Connected by", addr)
-                
+
                 t = threading.Thread(
                     target=self.handle_single_connection, args=(conn,), daemon=True)
                 t.start()
@@ -68,8 +69,6 @@ class HTTPServer():
 
             if request.method == "GET":
                 conn.close()
-                
-            
 
     def handle_request(self, request):
         try:
@@ -123,8 +122,8 @@ class HTTPServer():
             # If path is empty, that means user is at the homepage
             # so just serve index.html
             return self.serve_index()
-            
-        elif path.split('/')[0] == "init":  
+
+        elif path.split('/')[0] == "init":
             return self.serve_init(request)
 
         else:
@@ -132,12 +131,10 @@ class HTTPServer():
             response_headers = self.response_headers()
             response_body = b'<h1>404 Not Found</h1>'
 
-
             response = b''.join([response_line, response_headers, blank_line, response_body])
 
             return response
-    
-    
+
     def serve_index(self):
         path = 'index.html'
         response_line = self.response_line(200)
@@ -145,8 +142,8 @@ class HTTPServer():
         extra_headers = {'Content-Type': content_type}
         response_headers = self.response_headers(extra_headers)
         with open(path, 'rb') as f:
-                response_body = f.read()
-        
+            response_body = f.read()
+
         response = b''.join([response_line, response_headers, blank_line, response_body])
 
         return response
