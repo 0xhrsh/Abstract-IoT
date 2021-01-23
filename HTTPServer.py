@@ -81,7 +81,6 @@ class HTTPServer():
         return response
 
     def response_line(self, status_code):
-        """Returns response line (as bytes)"""
         reason = self.status_codes[status_code]
         response_line = 'HTTP/1.1 %s %s\r\n' % (status_code, reason)
 
@@ -106,7 +105,7 @@ class HTTPServer():
 
         response_line = self.response_line(200)
 
-        extra_headers = {'Allow': 'OPTIONS, GET'}
+        extra_headers = {'Allow': 'OPTIONS, GET, RAP'}
         response_headers = self.response_headers(extra_headers)
 
         blank_line = b'\r\n'
@@ -114,7 +113,6 @@ class HTTPServer():
         return b''.join([response_line, response_headers, blank_line])
 
     def handle_GET(self, request):
-        """Handler for GET HTTP method"""
 
         path = request.uri.strip('/')  # remove slash from URI
 
@@ -138,6 +136,21 @@ class HTTPServer():
 
             return response
 
+    def handle_RAP(self, request):
+        headers = request.headers
+        config_version = headers["config_version"]
+        PI_ID = headers["PI_ID"]
+
+        # if PI_ID not in db:
+        #   add the pi into db
+
+        # take data from request.body and put it into db
+        
+
+        return
+        
+    
+    
     def serve_index(self):
         path = 'index.html'
         response_line = self.response_line(200)
