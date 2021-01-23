@@ -126,6 +126,9 @@ class HTTPServer():
         elif path.split('/')[0] == "init":
             return self.serve_init(request)
 
+        elif path.split('/')[0] == "config":
+            return self.serve_config(request)
+
         else:
             response_line = self.response_line(404)
             response_headers = self.response_headers()
@@ -149,19 +152,27 @@ class HTTPServer():
         return response
 
     def serve_init(self, request):
-        with open('./init_s.sh', 'wb') as f:
-            f.write(request.content)
+        path = 'PI/init.sh'
         response_line = self.response_line(200)
-
-        print("done!")
-        path = 'index.html'
         content_type = mimetypes.guess_type(path)[0] or 'text/html'
-
         extra_headers = {'Content-Type': content_type}
         response_headers = self.response_headers(extra_headers)
 
         with open(path, 'rb') as f:
             response_body = f.read()
+
+        response = b''.join([response_line, response_headers, blank_line, response_body])
+
+        return response
+
+    def serve_config(self, request):
+        path = 'PI/config.json'
+        with open(path, 'rb') as f:
+            response_body = f.read()
+        response_line = self.response_line(200)
+        content_type = mimetypes.guess_type(path)[0] or 'application/json'
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
 
         response = b''.join([response_line, response_headers, blank_line, response_body])
 

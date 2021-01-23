@@ -128,5 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# RAP Changes
-*.sh
+# RAP files
+todo.txt
