@@ -1,5 +1,6 @@
 import json
 
+
 class HTTPRequest:
 
     def __init__(self, data):
@@ -25,14 +26,12 @@ class HTTPRequest:
             dheader = header.decode()
             self.headers[dheader.split(": ")[0]] = dheader.split(": ")[1]
 
-
         # split request line into seperate words
         words = request_line.split(b' ')
 
         # call decode to convert bytes to string
         self.method = words[0].decode()
         # self.headers = request_headers.decode()
-        
 
         if len(words) > 1:
             # we put this in if block because sometimes browsers

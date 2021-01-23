@@ -137,20 +137,17 @@ class HTTPServer():
             return response
 
     def handle_RAP(self, request):
-        headers = request.headers
-        config_version = headers["config_version"]
-        PI_ID = headers["PI_ID"]
+        # headers = request.headers
+        # config_version = headers["config_version"]
+        # PI_ID = headers["PI_ID"]
 
         # if PI_ID not in db:
         #   add the pi into db
 
         # take data from request.body and put it into db
-        
 
         return
-        
-    
-    
+
     def serve_index(self):
         path = 'index.html'
         response_line = self.response_line(200)
