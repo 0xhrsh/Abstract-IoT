@@ -3,6 +3,8 @@ import requests
 import time
 import json
 
+from requests.models import ChunkedEncodingError
+
 
 HUB_DOMAIN = "http://127.0.0.1:8888"
 
@@ -25,18 +27,23 @@ def getConfig():
 
 
 def sendDataRegularly(sensor_list, ptime, version):
+    time.sleep(3)
     try:
         while True:
-            time.sleep(ptime)
             for sensor in sensor_list:
+                time.sleep(0.05)
                 data = GPIO.input(sensor["SENSOR_PORT"])
                 body = {}
                 body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                 body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                 body['SENSOR_DATA'] = data
+                print("sending")
+                try:
+                    requests.put("http://127.0.0.1:8888", json=body, headers={"PI_ID": "42069", "config_version": version})
+                except ChunkedEncodingError:
+                    print("Server Overloaded")
 
-                requests.put("http://127.0.0.1:8888", json=body,
-                             headers={"PI_ID": "42069", "config_version": version})
+            time.sleep(ptime)
 
     except KeyboardInterrupt:
         GPIO.cleanup()
@@ -53,7 +60,6 @@ def sendDataUpdates(sensor_list, ptime, version):
 
     try:
         while True:
-            time.sleep(ptime)
             for sensor in sensor_list:
                 port_data = GPIO.input(sensor["SENSOR_PORT"])
                 if port_data != data[sensor["SENSOR_PORT"]]:
@@ -63,8 +69,13 @@ def sendDataUpdates(sensor_list, ptime, version):
                     body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                     body['SENSOR_DATA'] = port_data
 
-                    requests.put("http://127.0.0.1:8888", json=body,
-                                 headers={"PI_ID": "42069", "config_version": version})
+                    try:
+                        requests.put("http://127.0.0.1:8888", json=body, headers={"PI_ID": "42069", "config_version": version})
+                    except ChunkedEncodingError:
+                        print("Server Overloaded")
+                    
+            time.sleep(ptime)
+
 
     except KeyboardInterrupt:
         GPIO.cleanup()
@@ -72,7 +83,6 @@ def sendDataUpdates(sensor_list, ptime, version):
 
 if __name__ == '__main__':
     send_data_regularly, ptime, sensor_list, version = getConfig()
-    print(sensor_list)
     setupPi(sensor_list)
     # connect to server (send PI_ID)
     if send_data_regularly:

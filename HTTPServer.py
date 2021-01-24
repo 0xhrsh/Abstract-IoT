@@ -23,6 +23,7 @@ class HTTPServer():
 
     status_codes = {
         200: 'OK',
+        400: 'Bad Request',
         404: 'Not Found',
         501: 'Not Implemented',
     }
@@ -78,6 +79,7 @@ class HTTPServer():
 
             if request.method == "GET" or request.method == "PUT":
                 conn.close()
+                return
 
     def handle_request(self, request):
         try:
@@ -149,15 +151,17 @@ class HTTPServer():
         headers = request.headers
         config_version = headers["config_version"]
         PiID = headers["PI_ID"]
-        print(request.body)
 
         try:
             name = request.body["SENSOR_NAME"]
             port = request.body['SENSOR_PORT']
             data = request.body["SENSOR_DATA"]
         except KeyError:
-            print("Bad Request")
-            return b''
+            response_line = self.response_line(status_code=501)
+            response_headers = self.response_headers()
+            response_body = b'Bad Request!'
+            response = b''.join([response_line, response_headers, blank_line, response_body])
+            return response
 
         cur = self.con.cursor()
         cur.execute(INSERT.format(
@@ -165,8 +169,13 @@ class HTTPServer():
         cur.execute(UPDATE.format(
             config_version, name, data, PiID, port))
         self.con.commit()
+        print(PiID, config_version, port, name, data)
+        response_line = self.response_line(status_code=501)
+        response_headers = self.response_headers()
+        response_body = b'Recorded!'
+        response = b''.join([response_line, response_headers, blank_line, response_body])
 
-        return b''
+        return response
 
     def serve_index(self):
         path = 'index.html'
@@ -212,9 +221,6 @@ class HTTPServer():
 
         response_line = self.response_line(status_code=501)
         response_headers = self.response_headers()
-
-        blank_line = b'\r\n'
-
         response_body = b'<h1>501 Not Implemented</h1>'
 
         return b"".join([response_line, response_headers, blank_line, response_body])
