@@ -1,9 +1,11 @@
+from json.decoder import JSONDecodeError
 import socket
 from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
 import psycopg2
 from dotenv import Dotenv
+import json
 
 
 blank_line = b'\r\n'
@@ -52,6 +54,7 @@ class HTTPServer():
         try:
             while True:
                 conn, addr = s.accept()
+
                 print("Connected by", addr)
 
                 t = threading.Thread(
@@ -66,29 +69,26 @@ class HTTPServer():
             return
 
     def handle_single_connection(self, conn):
-        while True:
-            try:
-                data = conn.recv(1024)
-                request = HTTPRequest(data)
-            except socket.error:
-                conn.close()
-                break
+        try:
+            data = conn.recv(1024)
+            request = HTTPRequest(data)
+        except socket.error:
+            conn.close()
+            return
 
-            response = self.handle_request(request)
-            conn.sendall(response)
+        response = self.handle_request(request, conn)
+        conn.sendall(response)
+        conn.close()
+        return
 
-            if request.method == "GET" or request.method == "PUT":
-                conn.close()
-                return
-
-    def handle_request(self, request):
+    def handle_request(self, request, conn):
         try:
 
             handler = getattr(self, 'handle_%s' % request.method)
         except AttributeError:
             handler = self.HTTP_501_handler
 
-        response = handler(request)
+        response = handler(request, conn)
         return response
 
     def response_line(self, status_code):
@@ -111,19 +111,18 @@ class HTTPServer():
 
         return headers.encode()  # convert str to bytes
 
-    def handle_OPTIONS(self, request):
-        """Handler for OPTIONS HTTP method"""
+    def handle_OPTIONS(self, request, conn):
 
         response_line = self.response_line(200)
 
-        extra_headers = {'Allow': 'OPTIONS, GET, PUT'}
+        extra_headers = {'Allow': 'OPTIONS, GET, RAP'}
         response_headers = self.response_headers(extra_headers)
 
         blank_line = b'\r\n'
 
         return b''.join([response_line, response_headers, blank_line])
 
-    def handle_GET(self, request):
+    def handle_GET(self, request, conn):
 
         path = request.uri.strip('/')  # remove slash from URI
 
@@ -147,32 +146,42 @@ class HTTPServer():
 
             return response
 
-    def handle_PUT(self, request):
+    def handle_RAP(self, request, conn):
+        conn.sendall(b"Handling RAP")
         headers = request.headers
         config_version = headers["config_version"]
         PiID = headers["PI_ID"]
 
-        try:
-            name = request.body["SENSOR_NAME"]
-            port = request.body['SENSOR_PORT']
-            data = request.body["SENSOR_DATA"]
-        except KeyError:
-            response_line = self.response_line(status_code=501)
-            response_headers = self.response_headers()
-            response_body = b'Bad Request!'
-            response = b''.join([response_line, response_headers, blank_line, response_body])
-            return response
+        while True:
+            try:
+                data = conn.recv(1024)
+            except socket.error:
+                break
 
-        cur = self.con.cursor()
-        cur.execute(INSERT.format(
-            PiID, config_version, port, name, data))
-        cur.execute(UPDATE.format(
-            config_version, name, data, PiID, port))
-        self.con.commit()
-        print(PiID, config_version, port, name, data)
-        response_line = self.response_line(status_code=501)
+            try:
+                body = json.loads(data.decode())
+            except JSONDecodeError:
+                break
+
+            try:
+                name = body["SENSOR_NAME"]
+                port = body['SENSOR_PORT']
+                data = body["SENSOR_DATA"]
+            except KeyError:
+                break
+
+            cur = self.con.cursor()
+            cur.execute(INSERT.format(
+                PiID, config_version, port, name, data))
+            cur.execute(UPDATE.format(
+                config_version, name, data, PiID, port))
+            self.con.commit()
+            print(PiID, config_version, port, name, data)
+            conn.sendall(b"Update Successful")
+
+        response_line = self.response_line(status_code=400)
         response_headers = self.response_headers()
-        response_body = b'Recorded!'
+        response_body = b'Bad Request'
         response = b''.join([response_line, response_headers, blank_line, response_body])
 
         return response
@@ -217,7 +226,7 @@ class HTTPServer():
 
         return response
 
-    def HTTP_501_handler(self, request):
+    def HTTP_501_handler(self, request, conn):
 
         response_line = self.response_line(status_code=501)
         response_headers = self.response_headers()

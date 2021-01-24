@@ -2,11 +2,11 @@ import RPi.GPIO as GPIO
 import requests
 import time
 import json
+import socket
 
-from requests.models import ChunkedEncodingError
-
-
-HUB_DOMAIN = "http://127.0.0.1:8888"
+HOST = "127.0.0.1"
+PORT = 8888
+HUB_DOMAIN = "http://" + HOST + ":" + str(PORT)
 
 
 def setupPi(sensor_list):
@@ -27,65 +27,68 @@ def getConfig():
 
 
 def sendDataRegularly(sensor_list, ptime, version):
-    time.sleep(3)
-    try:
-        while True:
-            for sensor in sensor_list:
-                time.sleep(0.05)
-                data = GPIO.input(sensor["SENSOR_PORT"])
-                body = {}
-                body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
-                body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
-                body['SENSOR_DATA'] = data
-                print("sending")
-                try:
-                    requests.put("http://127.0.0.1:8888", json=body,
-                                 headers={"PI_ID": "42069", "config_version": version})
-                except ChunkedEncodingError:
-                    print("Server Overloaded")
-
-            time.sleep(ptime)
-
-    except KeyboardInterrupt:
-        GPIO.cleanup()
-
-
-def sendDataUpdates(sensor_list, ptime, version):
-    data = {}
-    print(sensor_list)
-
-    for sensor in sensor_list:
-        data[sensor["SENSOR_PORT"]] = GPIO.input(sensor["SENSOR_PORT"])
-
-    print(data)
-
-    try:
-        while True:
-            for sensor in sensor_list:
-                port_data = GPIO.input(sensor["SENSOR_PORT"])
-                if port_data != data[sensor["SENSOR_PORT"]]:
-                    data[sensor["SENSOR_PORT"]] = port_data
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        s.sendall(b'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: Icarus\r\nconfig_version: 1.1\r\n\r\n')
+        data = s.recv(1024)
+        print(data.decode())
+        time.sleep(1)
+        try:
+            while True:
+                for sensor in sensor_list:
+                    data = GPIO.input(sensor["SENSOR_PORT"])
                     body = {}
                     body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                     body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
-                    body['SENSOR_DATA'] = port_data
+                    body['SENSOR_DATA'] = data
+                    print("sending")
+                    print(str(json.dumps(body)).encode('utf8'))
+                    s.sendall(str(json.dumps(body)).encode('utf8'))
+                    ret = s.recv(1024)
+                    print(ret.decode())
 
-                    try:
-                        requests.put("http://127.0.0.1:8888", json=body,
-                                     headers={"PI_ID": "42069", "config_version": version})
-                    except ChunkedEncodingError:
-                        print("Server Overloaded")
+                time.sleep(ptime)
 
-            time.sleep(ptime)
+        except KeyboardInterrupt:
+            GPIO.cleanup()
 
-    except KeyboardInterrupt:
-        GPIO.cleanup()
+
+def sendDataUpdates(sensor_list, ptime, version):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        s.sendall(b'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: Icarus\r\nconfig_version: 1.1\r\n\r\n')
+        data = s.recv(1024)
+        print(data.decode())
+        time.sleep(1)
+
+        data = {}
+        for sensor in sensor_list:
+            data[sensor["SENSOR_PORT"]] = GPIO.input(sensor["SENSOR_PORT"])
+
+        try:
+            while True:
+                for sensor in sensor_list:
+                    port_data = GPIO.input(sensor["SENSOR_PORT"])
+                    if port_data != data[sensor["SENSOR_PORT"]]:
+                        data[sensor["SENSOR_PORT"]] = port_data
+                        body = {}
+                        body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
+                        body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
+                        body['SENSOR_DATA'] = port_data
+                        s.sendall(body)
+                        ret = s.recv(1024)
+                        print(ret.decode())
+
+                time.sleep(ptime)
+
+        except KeyboardInterrupt:
+            GPIO.cleanup()
 
 
 if __name__ == '__main__':
     send_data_regularly, ptime, sensor_list, version = getConfig()
     setupPi(sensor_list)
-    # connect to server (send PI_ID)
+
     if send_data_regularly:
         sendDataRegularly(sensor_list, ptime, version)
     else:

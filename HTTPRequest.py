@@ -1,7 +1,3 @@
-import json
-from json.decoder import JSONDecodeError
-
-
 class HTTPRequest:
 
     def __init__(self, data):
@@ -9,22 +5,16 @@ class HTTPRequest:
         self.uri = None
         self.http_version = '1.1'
         self.headers = {}
-        self.body = {}
 
         # call self.parse method to parse the request data
         self.parse(data)
 
     def parse(self, data):
         lines = data.split(b'\r\n')
-
+        print(data)
         request_line = lines[0]  # request line is the first line of the data
-        # request_headers = lines[6]
-        request_headers = lines[6:-2]
 
-        try:
-            self.body = json.loads(lines[-1].decode())
-        except JSONDecodeError:
-            print("no body")
+        request_headers = lines[6:-2]
 
         for header in request_headers:
             dheader = header.decode()
