@@ -2,6 +2,7 @@ import socket
 from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
+import psycopg2
 # import os
 # import requests
 
@@ -9,6 +10,9 @@ import mimetypes
 # import urllib.request
 # import shutil
 blank_line = b'\r\n'
+INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, OBJ_DETECTED) VALUES ('{}', {}, {}) \
+    ON CONFLICT (PI_ID) DO NOTHING;"
+UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, OBJ_DETECTED = {} WHERE PI_ID = '{}';"
 
 
 class HTTPServer():
@@ -25,8 +29,12 @@ class HTTPServer():
     }
 
     def __init__(self, host='127.0.0.1', port=8888):
+        con = psycopg2.connect(database="data", user="",
+                               password="", host="127.0.0.1", port="5432")
+        # todo: take username password from .env file
         self.host = host
         self.port = port
+        self.con = con
 
     def start(self):
 
@@ -105,7 +113,7 @@ class HTTPServer():
 
         response_line = self.response_line(200)
 
-        extra_headers = {'Allow': 'OPTIONS, GET, RAP'}
+        extra_headers = {'Allow': 'OPTIONS, GET, PUT'}
         response_headers = self.response_headers(extra_headers)
 
         blank_line = b'\r\n'
@@ -136,15 +144,18 @@ class HTTPServer():
 
             return response
 
-    def handle_RAP(self, request):
-        # headers = request.headers
-        # config_version = headers["config_version"]
-        # PI_ID = headers["PI_ID"]
+    def handle_PUT(self, request):
+        headers = request.headers
+        config_version = headers["config_version"]
+        PiID = headers["PI_ID"]
+        data = request.body["data"]
 
-        # if PI_ID not in db:
-        #   add the pi into db
-
-        # take data from request.body and put it into db
+        cur = self.con.cursor()
+        cur.execute(INSERT.format(
+            PiID, config_version, data))
+        cur.execute(UPDATE.format(
+            config_version, data, PiID))
+        self.con.commit()
 
         return
 
