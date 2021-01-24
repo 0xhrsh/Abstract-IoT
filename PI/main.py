@@ -4,7 +4,7 @@ import time
 import json
 
 
-HUB_DOMAIN = "example.com"
+HUB_DOMAIN = "http://127.0.0.1:8888"
 
 
 def setupPi(sensor_list):
@@ -19,7 +19,7 @@ def setupPi(sensor_list):
 def getConfig():
 
     response = requests.get(HUB_DOMAIN + "/config")
-    data = json.loads(response)
+    data = json.loads(response.content.decode())
 
     return data['send_data_regularly'], data['ptime'], data['sensor_list']
 
