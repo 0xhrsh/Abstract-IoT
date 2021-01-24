@@ -2,7 +2,17 @@ import socket
 from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
-import os
+import psycopg2
+# import os
+# import requests
+
+# to download file over a request (e.g. init.sh)
+# import urllib.request
+# import shutil
+blank_line = b'\r\n'
+INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, OBJ_DETECTED) VALUES ('{}', {}, {}) \
+    ON CONFLICT (PI_ID) DO NOTHING;"
+UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, OBJ_DETECTED = {} WHERE PI_ID = '{}';"
 
 
 class HTTPServer():
@@ -19,8 +29,12 @@ class HTTPServer():
     }
 
     def __init__(self, host='127.0.0.1', port=8888):
+        con = psycopg2.connect(database="data", user="",
+                               password="", host="127.0.0.1", port="5432")
+        # todo: take username password from .env file
         self.host = host
         self.port = port
+        self.con = con
 
     def start(self):
 
@@ -37,6 +51,7 @@ class HTTPServer():
             while True:
                 conn, addr = s.accept()
                 print("Connected by", addr)
+
                 t = threading.Thread(
                     target=self.handle_single_connection, args=(conn,), daemon=True)
                 t.start()
@@ -52,20 +67,18 @@ class HTTPServer():
         while True:
             try:
                 data = conn.recv(1024)
+                request = HTTPRequest(data)
             except socket.error:
                 conn.close()
                 break
-            if data == b"" or data == b"quit\n":
-                conn.close()
-                break
 
-            response = self.handle_request(data)
+            response = self.handle_request(request)
             conn.sendall(response)
 
-    def handle_request(self, data):
+            if request.method == "GET":
+                conn.close()
 
-        request = HTTPRequest(data)  # Get a parsed HTTP request
-
+    def handle_request(self, request):
         try:
 
             handler = getattr(self, 'handle_%s' % request.method)
@@ -76,7 +89,6 @@ class HTTPServer():
         return response
 
     def response_line(self, status_code):
-        """Returns response line (as bytes)"""
         reason = self.status_codes[status_code]
         response_line = 'HTTP/1.1 %s %s\r\n' % (status_code, reason)
 
@@ -101,7 +113,7 @@ class HTTPServer():
 
         response_line = self.response_line(200)
 
-        extra_headers = {'Allow': 'OPTIONS, GET'}
+        extra_headers = {'Allow': 'OPTIONS, GET, PUT'}
         response_headers = self.response_headers(extra_headers)
 
         blank_line = b'\r\n'
@@ -109,43 +121,87 @@ class HTTPServer():
         return b''.join([response_line, response_headers, blank_line])
 
     def handle_GET(self, request):
-        """Handler for GET HTTP method"""
 
         path = request.uri.strip('/')  # remove slash from URI
 
         if not path:
             # If path is empty, that means user is at the homepage
             # so just serve index.html
-            path = 'index.html'
+            return self.serve_index()
 
-        if os.path.exists(path) and not os.path.isdir(path):
-            response_line = self.response_line(200)
+        elif path.split('/')[0] == "init":
+            return self.serve_init(request)
 
-            # find out a file's MIME type
-            # if nothing is found, just send `text/html`
-            content_type = mimetypes.guess_type(path)[0] or 'text/html'
+        elif path.split('/')[0] == "config":
+            return self.serve_config(request)
 
-            extra_headers = {'Content-Type': content_type}
-            response_headers = self.response_headers(extra_headers)
-
-            with open(path, 'rb') as f:
-                response_body = f.read()
         else:
             response_line = self.response_line(404)
             response_headers = self.response_headers()
             response_body = b'<h1>404 Not Found</h1>'
 
-        blank_line = b'\r\n'
+            response = b''.join([response_line, response_headers, blank_line, response_body])
 
-        response = b''.join(
-            [response_line, response_headers, blank_line, response_body])
+            return response
+
+    def handle_PUT(self, request):
+        headers = request.headers
+        config_version = headers["config_version"]
+        PiID = headers["PI_ID"]
+        data = request.body["data"]
+
+        cur = self.con.cursor()
+        cur.execute(INSERT.format(
+            PiID, config_version, data))
+        cur.execute(UPDATE.format(
+            config_version, data, PiID))
+        self.con.commit()
+
+        return
+
+    def serve_index(self):
+        path = 'index.html'
+        response_line = self.response_line(200)
+        content_type = mimetypes.guess_type(path)[0] or 'text/html'
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
+        with open(path, 'rb') as f:
+            response_body = f.read()
+
+        response = b''.join([response_line, response_headers, blank_line, response_body])
+
+        return response
+
+    def serve_init(self, request):
+        path = 'PI/init.sh'
+        response_line = self.response_line(200)
+        content_type = mimetypes.guess_type(path)[0] or 'text/html'
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
+
+        with open(path, 'rb') as f:
+            response_body = f.read()
+
+        response = b''.join([response_line, response_headers, blank_line, response_body])
+
+        return response
+
+    def serve_config(self, request):
+        path = 'PI/config.json'
+        with open(path, 'rb') as f:
+            response_body = f.read()
+        response_line = self.response_line(200)
+        content_type = mimetypes.guess_type(path)[0] or 'application/json'
+        extra_headers = {'Content-Type': content_type}
+        response_headers = self.response_headers(extra_headers)
+
+        response = b''.join([response_line, response_headers, blank_line, response_body])
 
         return response
 
     def HTTP_501_handler(self, request):
 
         response_line = self.response_line(status_code=501)
-
         response_headers = self.response_headers()
 
         blank_line = b'\r\n'
