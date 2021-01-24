@@ -39,7 +39,8 @@ def sendDataRegularly(sensor_list, ptime, version):
                 body['SENSOR_DATA'] = data
                 print("sending")
                 try:
-                    requests.put("http://127.0.0.1:8888", json=body, headers={"PI_ID": "42069", "config_version": version})
+                    requests.put("http://127.0.0.1:8888", json=body,
+                                 headers={"PI_ID": "42069", "config_version": version})
                 except ChunkedEncodingError:
                     print("Server Overloaded")
 
@@ -70,12 +71,12 @@ def sendDataUpdates(sensor_list, ptime, version):
                     body['SENSOR_DATA'] = port_data
 
                     try:
-                        requests.put("http://127.0.0.1:8888", json=body, headers={"PI_ID": "42069", "config_version": version})
+                        requests.put("http://127.0.0.1:8888", json=body,
+                                     headers={"PI_ID": "42069", "config_version": version})
                     except ChunkedEncodingError:
                         print("Server Overloaded")
-                    
-            time.sleep(ptime)
 
+            time.sleep(ptime)
 
     except KeyboardInterrupt:
         GPIO.cleanup()
