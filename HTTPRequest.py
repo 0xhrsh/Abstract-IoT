@@ -1,4 +1,5 @@
 import json
+from json.decoder import JSONDecodeError
 
 
 class HTTPRequest:
@@ -20,7 +21,11 @@ class HTTPRequest:
         # request_headers = lines[6]
         request_headers = lines[6:-2]
 
-        self.body = json.loads(lines[-1].decode())
+        try:
+            self.body = json.loads(lines[-1].decode())
+        except JSONDecodeError:
+            print(lines[-1])
+            print("no body")
 
         for header in request_headers:
             dheader = header.decode()

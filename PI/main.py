@@ -30,8 +30,13 @@ def sendDataRegularly(sensor_list, ptime):
             time.sleep(ptime)
             for sensor in sensor_list:
                 data = GPIO.input(sensor["sensor_port"])
-                print(data)
-                # send data
+                body = {}
+                body['SENSOR_NAME'] = "IR Sensor"
+                body['SENSOR_PORT'] = sensor["sensor_port"]
+                body['SENSOR_DATA'] = data
+
+                requests.put("http://127.0.0.1:8888", json=body,
+                             headers={"PI_ID": "42069", "config_version": "8"})
 
     except KeyboardInterrupt:
         GPIO.cleanup()
@@ -39,23 +44,27 @@ def sendDataRegularly(sensor_list, ptime):
 
 def sendDataUpdates(sensor_list, ptime):
     data = {}
+    print(sensor_list)
 
     for sensor in sensor_list:
         data[sensor["sensor_port"]] = GPIO.input(sensor["sensor_port"])
 
+    print(data)
+
     try:
         while True:
-            send_update = False
             time.sleep(ptime)
             for sensor in sensor_list:
                 port_data = GPIO.input(sensor["sensor_port"])
                 if port_data != data[sensor["sensor_port"]]:
-                    data[sensor["sensor_port"]]
-                    send_update = True
+                    data[sensor["sensor_port"]] = port_data
+                    body = {}
+                    body['SENSOR_NAME'] = "IR Sensor"
+                    body['SENSOR_PORT'] = sensor["sensor_port"]
+                    body['SENSOR_DATA'] = port_data
 
-            if send_update:
-                print(data)
-                # Send data here
+                    requests.put("http://127.0.0.1:8888", json=body,
+                                 headers={"PI_ID": "42069", "config_version": "8"})
 
     except KeyboardInterrupt:
         GPIO.cleanup()
@@ -63,6 +72,7 @@ def sendDataUpdates(sensor_list, ptime):
 
 if __name__ == '__main__':
     send_data_regularly, ptime, sensor_list = getConfig()
+    print(sensor_list)
     setupPi(sensor_list)
     # connect to server (send PI_ID)
     if send_data_regularly:

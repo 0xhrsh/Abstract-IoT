@@ -7,9 +7,11 @@ from dotenv import Dotenv
 
 
 blank_line = b'\r\n'
-INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, OBJ_DETECTED) VALUES ('{}', {}, {}) \
-    ON CONFLICT (PI_ID) DO NOTHING;"
-UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, OBJ_DETECTED = {} WHERE PI_ID = '{}';"
+INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, SENSOR_PORT, SENSOR_NAME, SENSOR_DATA)\
+     VALUES ('{}', {}, {}, '{}', {}) ON CONFLICT (PI_ID, SENSOR_PORT) DO NOTHING;"
+
+UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, SENSOR_NAME = '{}', SENSOR_DATA = {}\
+     WHERE PI_ID = '{}' AND SENSOR_PORT = {};"
 
 
 class HTTPServer():
@@ -27,7 +29,7 @@ class HTTPServer():
 
     def __init__(self, host='127.0.0.1', port=8888):
         creds = Dotenv('creds.env')
-        print(creds)
+
         con = psycopg2.connect(database="data", user=creds["USER"],
                                password=creds["PASSWORD"], host="127.0.0.1", port="5432")
 
@@ -74,7 +76,7 @@ class HTTPServer():
             response = self.handle_request(request)
             conn.sendall(response)
 
-            if request.method == "GET":
+            if request.method == "GET" or request.method == "PUT":
                 conn.close()
 
     def handle_request(self, request):
@@ -147,16 +149,24 @@ class HTTPServer():
         headers = request.headers
         config_version = headers["config_version"]
         PiID = headers["PI_ID"]
-        data = request.body["data"]
+        print(request.body)
+
+        try:
+            name = request.body["SENSOR_NAME"]
+            port = request.body['SENSOR_PORT']
+            data = request.body["SENSOR_DATA"]
+        except KeyError:
+            print("Bad Request")
+            return b''
 
         cur = self.con.cursor()
         cur.execute(INSERT.format(
-            PiID, config_version, data))
+            PiID, config_version, port, name, data))
         cur.execute(UPDATE.format(
-            config_version, data, PiID))
+            config_version, name, data, PiID, port))
         self.con.commit()
 
-        return
+        return b''
 
     def serve_index(self):
         path = 'index.html'

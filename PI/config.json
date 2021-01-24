@@ -1,6 +1,6 @@
 {
     "send_data_regularly" : true,
-    "ptime" : 5,
+    "ptime" : 0.1,
     "version": 1.1,
     "sensor_list": [{
             "sensor_name": "IR Sensor",
