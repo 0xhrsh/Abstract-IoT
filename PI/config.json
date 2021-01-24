@@ -2,13 +2,13 @@
     "send_data_regularly" : true,
     "ptime" : 0.1,
     "version": 1.1,
-    "sensor_list": [{
-            "sensor_name": "IR Sensor",
-            "sensor_port": 16
+    "SENSOR_LIST": [{
+            "SENSOR_NAME": "IR Sensor",
+            "SENSOR_PORT": 16
         },
         {
-            "sensor_name": "IR Sensor 2",
-            "sensor_port": 22
+            "SENSOR_NAME": "IR Sensor 2",
+            "SENSOR_PORT": 22
         }
     ]
 }
