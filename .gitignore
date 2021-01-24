@@ -131,3 +131,4 @@ dmypy.json
 # RAP files
 todo.txt
 makeReq.py
+*.env

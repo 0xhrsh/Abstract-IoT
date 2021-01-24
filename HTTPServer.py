@@ -3,12 +3,9 @@ from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
 import psycopg2
-# import os
-# import requests
+from dotenv import Dotenv
 
-# to download file over a request (e.g. init.sh)
-# import urllib.request
-# import shutil
+
 blank_line = b'\r\n'
 INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, OBJ_DETECTED) VALUES ('{}', {}, {}) \
     ON CONFLICT (PI_ID) DO NOTHING;"
@@ -29,9 +26,11 @@ class HTTPServer():
     }
 
     def __init__(self, host='127.0.0.1', port=8888):
-        con = psycopg2.connect(database="data", user="",
-                               password="", host="127.0.0.1", port="5432")
-        # todo: take username password from .env file
+        creds = Dotenv('creds.env')
+        print(creds)
+        con = psycopg2.connect(database="data", user=creds["USER"],
+                               password=creds["PASSWORD"], host="127.0.0.1", port="5432")
+
         self.host = host
         self.port = port
         self.con = con
