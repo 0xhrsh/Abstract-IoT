@@ -45,12 +45,11 @@ def sendDataRegularly(sensor_list, ptime, version):
                     body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                     body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                     body['SENSOR_DATA'] = data
-
-                print("sending")
-                print(str(json.dumps(body)).encode('utf8'))
-                s.sendall(str(json.dumps(body)).encode('utf8'))
-                ret = s.recv(1024)
-                print(ret.decode())
+                    print("sending")
+                    print(str(json.dumps(body)).encode('utf8'))
+                    s.sendall(str(json.dumps(body)).encode('utf8'))
+                    ret = s.recv(1024)
+                    print(ret.decode())
 
                 time.sleep(ptime)
 
