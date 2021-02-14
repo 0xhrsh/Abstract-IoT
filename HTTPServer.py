@@ -14,6 +14,7 @@ INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, SENSOR_PORT, SENSOR_NAME, SENSO
 
 UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, SENSOR_NAME = '{}', SENSOR_DATA = {}\
      WHERE PI_ID = '{}' AND SENSOR_PORT = {};"
+READ = "SELECT * FROM PI;"
 
 
 class HTTPServer():
@@ -33,12 +34,12 @@ class HTTPServer():
     def __init__(self, host='127.0.0.1', port=8888):
         creds = Dotenv('creds.env')
 
-        con = psycopg2.connect(database="data", user=creds["USER"],
-                               password=creds["PASSWORD"], host="127.0.0.1", port="5432")
+        db = psycopg2.connect(database="data", user=creds["USER"],
+                              password=creds["PASSWORD"], host="127.0.0.1", port="5432")
 
         self.host = host
         self.port = port
-        self.con = con
+        self.db = db
 
     def start(self):
 
@@ -170,12 +171,12 @@ class HTTPServer():
             except KeyError:
                 break
 
-            cur = self.con.cursor()
+            cur = self.db.cursor()
             cur.execute(INSERT.format(
                 PiID, config_version, port, name, data))
             cur.execute(UPDATE.format(
                 config_version, name, data, PiID, port))
-            self.con.commit()
+            self.db.commit()
             print(PiID, config_version, port, name, data)
             conn.sendall(b"Update Successful")
 
@@ -187,13 +188,23 @@ class HTTPServer():
         return response
 
     def serve_index(self):
+        cur = self.db.cursor()
+        cur.execute(READ)
+        rows = cur.fetchall()
+        device_list = ""
+        for row in rows:
+            device_list += str(row) + "<br>"
+
         path = 'index.html'
         response_line = self.response_line(200)
         content_type = mimetypes.guess_type(path)[0] or 'text/html'
         extra_headers = {'Content-Type': content_type}
         response_headers = self.response_headers(extra_headers)
         with open(path, 'rb') as f:
-            response_body = f.read()
+
+            response_body = f.read().decode('utf8')
+            response_body = response_body.format(device_list=device_list)
+            response_body = response_body.encode('utf8')
 
         response = b''.join([response_line, response_headers, blank_line, response_body])
 

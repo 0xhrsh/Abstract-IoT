@@ -63,7 +63,7 @@ def sendDataUpdates(sensor_list, ptime, version):
 
         data = {}
         for sensor in sensor_list:
-            data[sensor["SENSOR_PORT"]] = GPIO.input(sensor["SENSOR_PORT"])
+            data[sensor["SENSOR_PORT"]] = None
 
         try:
             while True:
