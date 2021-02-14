@@ -29,12 +29,12 @@ class HTTPServer():
     }
 
     def __init__(self, host='127.0.0.1', port=8888):
-        con = psycopg2.connect(database="data", user="",
-                               password="", host="127.0.0.1", port="5432")
+        db = psycopg2.connect(database="data", user="rap",
+                              password="rap@iitj", host="127.0.0.1", port="5432")
         # todo: take username password from .env file
         self.host = host
         self.port = port
-        self.con = con
+        self.db = db
 
     def start(self):
 
@@ -127,6 +127,7 @@ class HTTPServer():
         if not path:
             # If path is empty, that means user is at the homepage
             # so just serve index.html
+            print(request)
             return self.serve_index()
 
         elif path.split('/')[0] == "init":
@@ -150,12 +151,12 @@ class HTTPServer():
         PiID = headers["PI_ID"]
         data = request.body["data"]
 
-        cur = self.con.cursor()
+        cur = self.db.cursor()
         cur.execute(INSERT.format(
             PiID, config_version, data))
         cur.execute(UPDATE.format(
             config_version, data, PiID))
-        self.con.commit()
+        self.db.commit()
 
         return
 
