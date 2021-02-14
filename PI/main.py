@@ -4,6 +4,10 @@ import time
 import json
 import socket
 
+HEADER = 'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: 42069\r\nconfig_version: {}\r\n\r\n'
+
+
+
 HOST = "127.0.0.1"
 PORT = 8888
 HUB_DOMAIN = "http://" + HOST + ":" + str(PORT)
@@ -29,7 +33,7 @@ def getConfig():
 def sendDataRegularly(sensor_list, ptime, version):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        s.sendall(b'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: Icarus\r\nconfig_version: 1.1\r\n\r\n')
+        s.sendall(HEADER.format(version).encode('utf8'))
         data = s.recv(1024)
         print(data.decode())
         time.sleep(1)
@@ -41,11 +45,12 @@ def sendDataRegularly(sensor_list, ptime, version):
                     body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                     body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                     body['SENSOR_DATA'] = data
-                    print("sending")
-                    print(str(json.dumps(body)).encode('utf8'))
-                    s.sendall(str(json.dumps(body)).encode('utf8'))
-                    ret = s.recv(1024)
-                    print(ret.decode())
+
+                print("sending")
+                print(str(json.dumps(body)).encode('utf8'))
+                s.sendall(str(json.dumps(body)).encode('utf8'))
+                ret = s.recv(1024)
+                print(ret.decode())
 
                 time.sleep(ptime)
 
@@ -56,7 +61,7 @@ def sendDataRegularly(sensor_list, ptime, version):
 def sendDataUpdates(sensor_list, ptime, version):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        s.sendall(b'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: Icarus\r\nconfig_version: 1.1\r\n\r\n')
+        s.sendall(HEADER.format(version).encode('utf8'))
         data = s.recv(1024)
         print(data.decode())
         time.sleep(1)
