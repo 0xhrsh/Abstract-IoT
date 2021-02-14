@@ -13,6 +13,7 @@ blank_line = b'\r\n'
 INSERT = "INSERT INTO PI (PI_ID, CONFIG_VERSION, OBJ_DETECTED) VALUES ('{}', {}, {}) \
     ON CONFLICT (PI_ID) DO NOTHING;"
 UPDATE = "UPDATE PI SET CONFIG_VERSION = {}, OBJ_DETECTED = {} WHERE PI_ID = '{}';"
+READ = "SELECT * FROM PI;"
 
 
 class HTTPServer():
@@ -127,7 +128,6 @@ class HTTPServer():
         if not path:
             # If path is empty, that means user is at the homepage
             # so just serve index.html
-            print(request)
             return self.serve_index()
 
         elif path.split('/')[0] == "init":
@@ -161,13 +161,23 @@ class HTTPServer():
         return
 
     def serve_index(self):
+        cur = self.db.cursor()
+        cur.execute(READ)
+        rows = cur.fetchall()
+        device_list = ""
+        for row in rows:
+            device_list += str(row) + "<br>"
+
         path = 'index.html'
         response_line = self.response_line(200)
         content_type = mimetypes.guess_type(path)[0] or 'text/html'
         extra_headers = {'Content-Type': content_type}
         response_headers = self.response_headers(extra_headers)
         with open(path, 'rb') as f:
-            response_body = f.read()
+
+            response_body = f.read().decode('utf8')
+            response_body = response_body.format(device_list=device_list)
+            response_body = response_body.encode('utf8')
 
         response = b''.join([response_line, response_headers, blank_line, response_body])
 
