@@ -4,10 +4,6 @@
     "version": 1.1,
     "SENSOR_LIST": [{
             "SENSOR_NAME": "IR Sensor",
-            "SENSOR_PORT": 16
-        },
-        {
-            "SENSOR_NAME": "IR Sensor 2",
             "SENSOR_PORT": 22
         }
     ]

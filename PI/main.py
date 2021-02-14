@@ -64,7 +64,6 @@ def sendDataUpdates(sensor_list, ptime, version):
         data = {}
         for sensor in sensor_list:
             data[sensor["SENSOR_PORT"]] = None
-
         try:
             while True:
                 for sensor in sensor_list:
@@ -75,7 +74,7 @@ def sendDataUpdates(sensor_list, ptime, version):
                         body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                         body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                         body['SENSOR_DATA'] = port_data
-                        s.sendall(body)
+                        s.sendall(str(json.dumps(body)).encode('utf8'))
                         ret = s.recv(1024)
                         print(ret.decode())
 
