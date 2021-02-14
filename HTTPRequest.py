@@ -11,7 +11,6 @@ class HTTPRequest:
 
     def parse(self, data):
         lines = data.split(b'\r\n')
-        print(data)
         request_line = lines[0]  # request line is the first line of the data
 
         request_headers = lines[6:-2]
