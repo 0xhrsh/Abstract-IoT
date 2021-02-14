@@ -7,7 +7,6 @@ import socket
 HEADER = 'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: 42069\r\nconfig_version: {}\r\n\r\n'
 
 
-
 HOST = "127.0.0.1"
 PORT = 8888
 HUB_DOMAIN = "http://" + HOST + ":" + str(PORT)
