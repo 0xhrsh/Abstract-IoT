@@ -4,7 +4,7 @@ from HTTPRequest import HTTPRequest
 import threading
 import mimetypes
 import psycopg2
-from dotenv import Dotenv
+# from dotenv import Dotenv
 import json
 
 
@@ -31,15 +31,16 @@ class HTTPServer():
         501: 'Not Implemented',
     }
 
-    def __init__(self, host='127.0.0.1', port=8888):
-        creds = Dotenv('creds.env')
-
-        db = psycopg2.connect(database="data", user=creds["USER"],
-                              password=creds["PASSWORD"], host="127.0.0.1", port="5432")
+    def __init__(self, host='192.168.1.6', port=8888):
+        # creds = Dotenv('creds.env')
+        # f = open("db.json")
+        # db = json.loads(f)
+        # db = psycopg2.connect(database="data", user="rap",
+                            #   password="rap@iitj", host="127.0.0.1", port="5432")
 
         self.host = host
         self.port = port
-        self.db = db
+        self.db = {}
 
     def start(self):
 
@@ -148,6 +149,7 @@ class HTTPServer():
             return response
 
     def handle_RAP(self, request, conn):
+        print("Pi connected")
         conn.sendall(b"Handling RAP")
         headers = request.headers
         config_version = headers["config_version"]
@@ -156,6 +158,8 @@ class HTTPServer():
         while True:
             try:
                 data = conn.recv(1024)
+                print("Data from {}: {} with version {}".format(
+                    PiID, data.decode('utf8'), config_version))
             except socket.error:
                 break
 
@@ -171,18 +175,21 @@ class HTTPServer():
             except KeyError:
                 break
 
-            cur = self.db.cursor()
-            cur.execute(INSERT.format(
-                PiID, config_version, port, name, data))
-            cur.execute(UPDATE.format(
-                config_version, name, data, PiID, port))
-            self.db.commit()
-            print(PiID, config_version, port, name, data)
+            try:
+                self.db[PiID][port] = [name, data]
+            except:
+                self.db[PiID] = {port: [name, data]}
+
+            # cur = self.db.cursor()
+            # cur.execute(INSERT.format(
+            #     PiID, config_version, port, name, data))
+            # cur.execute(UPDATE.format(
+            #     config_version, name, data, PiID, port))
+            # self.db.commit()
 
             with open('PI/config.json') as f:
-                data = json.load(f)
-                print(data["version"])
-                conn.sendall(str(data["version"]).encode('utf8'))
+                config = json.load(f)
+                conn.sendall(str(config["version"]).encode('utf8'))
 
         response_line = self.response_line(status_code=400)
         response_headers = self.response_headers()
@@ -192,12 +199,16 @@ class HTTPServer():
         return response
 
     def serve_index(self):
-        cur = self.db.cursor()
-        cur.execute(READ)
-        rows = cur.fetchall()
-        device_list = ""
-        for row in rows:
-            device_list += str(row) + "<br>"
+        # cur = self.db.cursor()
+        # cur.execute(READ)
+        # rows = cur.fetchall()
+        device_list = "<table><tr><th>PiId</th> <th>Sensor Port</th> <th>Sensor Name</th> <th>Sensor Value</th></tr>"
+        for piid in self.db:
+            for port in self.db[piid]:
+                device_list += "<tr>" + "<td>" + str(piid) + "</td>" + "<td>" + str(
+                    port) + "</td>" + "<td>" + self.db[piid][port][0] + "</td>" + "<td>" + str(self.db[piid][port][1]) + "</td>" + "</tr>"
+
+        device_list += "</table>"
 
         path = 'index.html'
         response_line = self.response_line(200)

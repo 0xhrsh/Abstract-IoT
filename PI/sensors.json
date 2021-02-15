@@ -1,0 +1,11 @@
+{
+    "sensor_list": [{
+            "sensor_name": "IR Sensor",
+            "sensor_port": 16
+        },
+        {
+            "sensor_name": "IR Sensor 2",
+            "sensor_port": 22
+        }
+    ]
+}
