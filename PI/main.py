@@ -50,9 +50,8 @@ def sendDataRegularly(sensor_list, ptime, version):
                     s.sendall(str(json.dumps(body)).encode('utf8'))
                     ret = s.recv(1024)
                     print(ret.decode())
-                    if(ret.decode('utf8')!=str(version)):
+                    if(ret.decode('utf8') != str(version)):
                         os.system("sudo reboot")
-
 
                 time.sleep(ptime)
 
@@ -84,7 +83,7 @@ def sendDataUpdates(sensor_list, ptime, version):
                         s.sendall(str(json.dumps(body)).encode('utf8'))
                         ret = s.recv(1024)
                         print(ret.decode())
-                        if(ret.decode('utf8')!=str(version)):
+                        if(ret.decode('utf8') != str(version)):
                             os.system("sudo reboot")
 
                 time.sleep(ptime)
