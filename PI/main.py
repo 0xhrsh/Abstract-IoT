@@ -44,11 +44,11 @@ def sendDataRegularly(sensor_list, ptime, version):
                 body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                 body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                 body['SENSOR_DATA'] = data
-                print("sending")
-                print(str(json.dumps(body)).encode('utf8'))
+                print("Sending data to hub...")
+                print("\t" + str(json.dumps(body)))
                 s.sendall(str(json.dumps(body)).encode('utf8'))
                 ret = s.recv(1024)
-                print(ret.decode())
+                print("\t Current Version:", ret.decode())
                 if(ret.decode('utf8') != str(version)):
                     return
 
@@ -79,9 +79,11 @@ def sendDataUpdates(sensor_list, ptime, version):
                     body['SENSOR_NAME'] = sensor["SENSOR_NAME"]
                     body['SENSOR_PORT'] = sensor["SENSOR_PORT"]
                     body['SENSOR_DATA'] = port_data
+                    print("Sending data to hub...")
+                    print("\t" + str(json.dumps(body)))
                     s.sendall(str(json.dumps(body)).encode('utf8'))
                     ret = s.recv(1024)
-                    print(ret.decode())
+                    print("\t Current Version:", ret.decode())
                     if(ret.decode('utf8') != str(version)):
                         return
 
@@ -100,3 +102,5 @@ if __name__ == '__main__':
             sendDataRegularly(sensor_list, ptime, version)
         else:
             sendDataUpdates(sensor_list, ptime, version)
+
+        print("Starting Client.....")
