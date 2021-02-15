@@ -178,7 +178,11 @@ class HTTPServer():
                 config_version, name, data, PiID, port))
             self.db.commit()
             print(PiID, config_version, port, name, data)
-            conn.sendall(b"Update Successful")
+
+            with open('PI/config.json') as f:
+                data = json.load(f)
+                print(data["version"])
+                conn.sendall(str(data["version"]).encode('utf8'))
 
         response_line = self.response_line(status_code=400)
         response_headers = self.response_headers()

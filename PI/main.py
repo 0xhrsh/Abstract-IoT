@@ -3,6 +3,7 @@ import requests
 import time
 import json
 import socket
+import os
 
 HEADER = 'RAP\r\n\r\n\r\n\r\n\r\n\r\nPI_ID: 42069\r\nconfig_version: {}\r\n\r\n'
 
@@ -49,6 +50,9 @@ def sendDataRegularly(sensor_list, ptime, version):
                     s.sendall(str(json.dumps(body)).encode('utf8'))
                     ret = s.recv(1024)
                     print(ret.decode())
+                    if(ret.decode('utf8')!=str(version)):
+                        os.system("sudo reboot")
+
 
                 time.sleep(ptime)
 
@@ -80,6 +84,8 @@ def sendDataUpdates(sensor_list, ptime, version):
                         s.sendall(str(json.dumps(body)).encode('utf8'))
                         ret = s.recv(1024)
                         print(ret.decode())
+                        if(ret.decode('utf8')!=str(version)):
+                            os.system("sudo reboot")
 
                 time.sleep(ptime)
 
